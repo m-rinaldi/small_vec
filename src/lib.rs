@@ -39,8 +39,6 @@ impl<T, const N: usize> SmallBuf<T, N> {
             Local(arr, len) => {
                 if *len < N {
                     arr[*len] = MaybeUninit::new(val);
-                    // TODO what if panic here?
-                    //  drop all stored elements
                     *len += 1;
                 } else {
                     let vec = {

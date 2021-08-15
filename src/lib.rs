@@ -5,29 +5,36 @@ pub enum SmallBuf<T, const N: usize> {
     Remote(Vec<T>),
 }
 
+use SmallBuf::*;
+
 impl<T, const N: usize> SmallBuf<T, N> {
     pub fn new() -> Self {
         let uninit_arr:[MaybeUninit<T>; N] = unsafe {
             MaybeUninit::uninit().assume_init()
         };
         // TODO use to-date unstable feature uninit_array() instead
-        Self::Local(uninit_arr, 0)
+        Local(uninit_arr, 0)
     }
 
     pub fn len(&self) -> usize {
-        use SmallBuf::*;
         match self {
             Local(_,len) => *len,
             Remote(vec) => vec.len(),
         }
     }
 
-    // TODO
-    //pub fn is_local(&self) -> bool
-    //pub fn is_remote(&self) -> bool
+    pub fn is_local(&self) -> bool {
+        match self {
+            Local(_, _) => true,
+            Remote(_) => false,
+        }
+    }
 
+    pub fn is_remote(&self) -> bool {
+        return !self.is_local()
+    }
+    
     pub fn push(&mut self, val: T) {
-        use SmallBuf::*;
         match self {
             Local(arr, len) => {
                 if *len < N {
@@ -81,17 +88,26 @@ mod tests {
 
         buf.push(1);
         assert_eq!(buf.len(), 1);
+        assert!(buf.is_local());
 
         buf.push(2);
         assert_eq!(buf.len(), 2);
+        assert!(buf.is_local());
 
         buf.push(3);
         assert_eq!(buf.len(), 3);
+        assert!(buf.is_local());
 
         buf.push(4);
         assert_eq!(buf.len(), 4);
+        assert!(buf.is_local());
 
         buf.push(5);
         assert_eq!(buf.len(), 5);
+        assert!(buf.is_remote());
+
+        buf.push(6);
+        assert_eq!(buf.len(), 6);
+        assert!(buf.is_remote());
     }
 }

@@ -59,11 +59,22 @@ impl<T, const N: usize> SmallBuf<T, N> {
         }
     }
 
-    /* TODO
     pub fn pop(&mut self) -> Option<T> {
-
+        match self {
+            Local(arr, len) => {
+                if *len == 0 {
+                    return None
+                } else {
+                    let val:T = unsafe {
+                        std::mem::transmute_copy(&arr[*len-1])
+                    };
+                    *len -= 1;
+                    Some(val)
+                }
+            }
+            Remote(vec) => vec.pop(),
+        }
     }
-    */
 }
 
 #[cfg(test)]
@@ -109,5 +120,53 @@ mod tests {
         buf.push(6);
         assert_eq!(buf.len(), 6);
         assert!(buf.is_remote());
+    }
+
+    #[test]
+    fn test_push_and_pop_locally() {
+        let mut buf = SmallBuf::<_, 4>::new();
+
+        buf.push(1usize);
+        buf.push(2);
+        buf.push(3);
+        buf.push(4);
+        assert!(buf.is_local());
+
+        assert_eq!(buf.pop(), Some(4));
+        assert_eq!(buf.pop(), Some(3));
+        assert_eq!(buf.pop(), Some(2));
+        assert_eq!(buf.pop(), Some(1));
+        assert_eq!(buf.pop(), None);
+        assert_eq!(buf.pop(), None);
+    }
+
+    #[test]
+    fn test_push_and_pop_remotely() {
+        let mut buf = SmallBuf::<_, 4>::new();
+
+        buf.push(1usize);
+        buf.push(2);
+        buf.push(3);
+        buf.push(4);
+        assert_eq!(buf.len(), 4);
+        assert!(buf.is_local());
+
+        buf.push(5);
+        assert_eq!(buf.len(), 5);
+        assert!(buf.is_remote());
+
+        buf.push(6);
+        buf.push(7);
+        assert_eq!(buf.len(), 7);
+
+        assert_eq!(buf.pop(), Some(7));
+        assert_eq!(buf.pop(), Some(6));
+        assert_eq!(buf.pop(), Some(5));
+        assert_eq!(buf.pop(), Some(4));
+        assert_eq!(buf.pop(), Some(3));
+        assert_eq!(buf.pop(), Some(2));
+        assert_eq!(buf.pop(), Some(1));
+        assert_eq!(buf.pop(), None);
+        assert_eq!(buf.pop(), None);
     }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "small_buf"
+name = "small_vec"
 version = "0.1.0"
 edition = "2018"
 

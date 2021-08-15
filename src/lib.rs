@@ -31,7 +31,9 @@ impl<T, const N: usize> SmallBuf<T, N> {
         match self {
             Local(arr, len) => {
                 if *len < N {
-                    // TODO insert into array
+                    arr[*len] = MaybeUninit::new(val);
+                    // TODO what if panic here?
+                    //  drop all stored elements
                     *len += 1;
                 } else {
                     let vec = {
@@ -41,8 +43,9 @@ impl<T, const N: usize> SmallBuf<T, N> {
                         Vec::from(buf)
                     };
                     *self = Remote(vec);
+                    self.push(val);
                 }
-            }
+            },
             Remote(vec) => {
                 vec.push(val);
             },
@@ -69,5 +72,26 @@ mod tests {
     fn test_zero_len() {
         let buf = SmallBuf::<u8, 32>::new();
         assert_eq!(buf.len(), 0);
+    }
+
+    #[test]
+    fn test_switch_from_local_to_remote() {
+        let mut buf = SmallBuf::<usize, 4>::new();
+        assert_eq!(buf.len(), 0);
+
+        buf.push(1);
+        assert_eq!(buf.len(), 1);
+
+        buf.push(2);
+        assert_eq!(buf.len(), 2);
+
+        buf.push(3);
+        assert_eq!(buf.len(), 3);
+
+        buf.push(4);
+        assert_eq!(buf.len(), 4);
+
+        buf.push(5);
+        assert_eq!(buf.len(), 5);
     }
 }

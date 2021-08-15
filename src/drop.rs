@@ -33,9 +33,52 @@ mod tests {
         }
     }
 
+    use crate::SmallBuf;
+
     #[test]
     fn test_drop_locally() {
         let mut cnt = 0u8;
-        let mut buf = SmallBuf<_, 3>::new();
+        let mut buf = SmallBuf::<_, 3>::new();
+
+        assert_eq!(cnt, 0);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 1);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 2);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 3);
+
+        std::mem::drop(buf);
+        assert_eq!(cnt, 0);
+    }
+
+    #[test]
+    fn test_drop_remotely() {
+        let mut cnt = 0u8;
+        let mut buf = SmallBuf::<_, 3>::new();
+
+        assert_eq!(cnt, 0);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 1);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 2);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 3);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert!(buf.is_remote());
+        assert_eq!(cnt, 4);
+
+        buf.push(CounterGuard::new(&mut cnt));
+        assert_eq!(cnt, 5);
+
+        std::mem::drop(buf);
+        assert_eq!(cnt, 0);
     }
 }

@@ -40,15 +40,18 @@ impl<T, const N: usize> SmallBuf<T, N> {
         match self {
             Local(arr, len) => {
                 if *len < N {
+                    // there is still room in the local buffer
                     arr[*len] = MaybeUninit::new(val);
                     *len += 1;
                 } else {
+                    // need to allocate a remote buffer
                     let vec = {
                         let buf: [T; N] = unsafe {
                             std::mem::transmute_copy(arr)
                         };
                         Vec::from(buf)
                     };
+                    *len = 0; // before dropping the current buffer
                     *self = Remote(vec);
                     self.push(val);
                 }

@@ -10,7 +10,7 @@ impl<T, const N: usize> SmallBuf<T, N> {
         let uninit_arr:[MaybeUninit<T>; N] = unsafe {
             MaybeUninit::uninit().assume_init()
         };
-        // TODO use uninit_array() instead
+        // TODO use to-date unstable feature uninit_array() instead
         Self::Local(uninit_arr, 0)
     }
 
@@ -22,11 +22,34 @@ impl<T, const N: usize> SmallBuf<T, N> {
         }
     }
 
-    /* TODO
-    pub fn push(&mut self, val: T) {
+    // TODO
+    //pub fn is_local(&self) -> bool
+    //pub fn is_remote(&self) -> bool
 
+    pub fn push(&mut self, val: T) {
+        use SmallBuf::*;
+        match self {
+            Local(arr, len) => {
+                if *len < N {
+                    // TODO insert into array
+                    *len += 1;
+                } else {
+                    let vec = {
+                        let buf: [T; N] = unsafe {
+                            std::mem::transmute_copy(arr)
+                        };
+                        Vec::from(buf)
+                    };
+                    *self = Remote(vec);
+                }
+            }
+            Remote(vec) => {
+                vec.push(val);
+            },
+        }
     }
 
+    /* TODO
     pub fn pop(&mut self) -> Option<T> {
 
     }

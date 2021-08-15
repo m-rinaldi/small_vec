@@ -1,3 +1,5 @@
+mod drop;
+
 use std::mem::MaybeUninit;
 
 pub enum SmallBuf<T, const N: usize> {

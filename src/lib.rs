@@ -2,14 +2,14 @@ mod drop;
 
 use std::mem::MaybeUninit;
 
-pub enum SmallBuf<T, const N: usize> {
+pub enum SmallVec<T, const N: usize> {
     Local([MaybeUninit<T>; N], usize),
     Remote(Vec<T>),
 }
 
-use SmallBuf::*;
+use SmallVec::*;
 
-impl<T, const N: usize> SmallBuf<T, N> {
+impl<T, const N: usize> SmallVec<T, N> {
     pub fn new() -> Self {
         let uninit_arr:[MaybeUninit<T>; N] = unsafe {
             MaybeUninit::uninit().assume_init()
@@ -82,22 +82,22 @@ impl<T, const N: usize> SmallBuf<T, N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::SmallBuf;
+    use crate::SmallVec;
 
     #[test]
     fn test_new() {
-        SmallBuf::<u8, 32>::new();
+        SmallVec::<u8, 32>::new();
     }
 
     #[test]
     fn test_zero_len() {
-        let buf = SmallBuf::<u8, 32>::new();
+        let buf = SmallVec::<u8, 32>::new();
         assert_eq!(buf.len(), 0);
     }
 
     #[test]
     fn test_switch_from_local_to_remote() {
-        let mut buf = SmallBuf::<usize, 4>::new();
+        let mut buf = SmallVec::<usize, 4>::new();
         assert_eq!(buf.len(), 0);
 
         buf.push(1);
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_push_and_pop_locally() {
-        let mut buf = SmallBuf::<_, 4>::new();
+        let mut buf = SmallVec::<_, 4>::new();
 
         buf.push(1usize);
         buf.push(2);
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_push_and_pop_remotely() {
-        let mut buf = SmallBuf::<_, 4>::new();
+        let mut buf = SmallVec::<_, 4>::new();
 
         buf.push(1usize);
         buf.push(2);

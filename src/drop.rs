@@ -1,6 +1,6 @@
-use crate::SmallBuf;
+use crate::SmallVec;
 
-impl<T, const N: usize> Drop for SmallBuf<T, N> {
+impl<T, const N: usize> Drop for SmallVec<T, N> {
     fn drop(&mut self) {
         match self {
             Self::Local(_, _) => {
@@ -33,12 +33,12 @@ mod tests {
         }
     }
 
-    use crate::SmallBuf;
+    use crate::SmallVec;
 
     #[test]
     fn test_drop_locally() {
         let mut cnt = 0u8;
-        let mut buf = SmallBuf::<_, 3>::new();
+        let mut buf = SmallVec::<_, 3>::new();
 
         assert_eq!(cnt, 0);
 
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_drop_remotely() {
         let mut cnt = 0u8;
-        let mut buf = SmallBuf::<_, 3>::new();
+        let mut buf = SmallVec::<_, 3>::new();
 
         assert_eq!(cnt, 0);
 

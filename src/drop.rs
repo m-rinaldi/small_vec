@@ -1,17 +1,8 @@
 use crate::SmallVec;
 
+// TODO not needed anymore
 impl<T, const N: usize> Drop for SmallVec<T, N> {
-    fn drop(&mut self) {
-        match self {
-            Self::Local(_, _) => {
-                while let Some(val) = self.pop() {
-                    // superfluous
-                    std::mem::drop(val);
-                }
-            }
-            Self::Remote(_) => (),
-        }
-    }
+    fn drop(&mut self) {}
 }
 
 #[cfg(test)]

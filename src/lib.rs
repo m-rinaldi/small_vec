@@ -1,62 +1,82 @@
 mod drop;
 
-use std::mem::MaybeUninit;
+use local_vec::LocalVec;
 
+
+/// A vector supporting small buffer optimization
 pub enum SmallVec<T, const N: usize> {
-    Local([MaybeUninit<T>; N], usize),
-    Remote(Vec<T>),
+    LocalBuf(LocalVec<T, N>),
+    RemoteBuf(Vec<T>),
 }
 
 use SmallVec::*;
 
 impl<T, const N: usize> SmallVec<T, N> {
     pub fn new() -> Self {
-        let uninit_arr:[MaybeUninit<T>; N] = unsafe {
-            MaybeUninit::uninit().assume_init()
-        };
-        // TODO use to-date unstable feature uninit_array() instead
-        Local(uninit_arr, 0)
+        LocalBuf(LocalVec::new())
     }
 
     pub fn len(&self) -> usize {
         match self {
-            Local(_,len) => *len,
-            Remote(vec) => vec.len(),
+            LocalBuf(vec) => vec.len(),
+            RemoteBuf(vec) => vec.len(),
         }
     }
 
+    /// whether the vector's elements are in the local buffer
     pub fn is_local(&self) -> bool {
         match self {
-            Local(_, _) => true,
-            Remote(_) => false,
+            LocalBuf(_) => true,
+            RemoteBuf(_) => false,
         }
     }
 
+    /// whether the vector's elements are in the remote buffer
     pub fn is_remote(&self) -> bool {
         return !self.is_local()
     }
     
     pub fn push(&mut self, val: T) {
         match self {
-            Local(arr, len) => {
-                if *len < N {
+            LocalBuf(local_vec) => {
+                if !local_vec.is_full() {
                     // there is still room in the local buffer
-                    arr[*len] = MaybeUninit::new(val);
-                    *len += 1;
+                    local_vec.push(val);
                 } else {
                     // need to allocate a remote buffer
-                    let vec = {
-                        let buf: [T; N] = unsafe {
-                            std::mem::transmute_copy(arr)
-                        };
-                        Vec::from(buf)
+                    let cap = {
+                        // new capacity to be set to the previous one plus
+                        // one for the new element to be pushed
+                        local_vec.len()
+                            .checked_add(1)
+                            .expect("new capacity would overflow capacity type")
                     };
-                    *len = 0; // before dropping the current buffer
-                    *self = Remote(vec);
+                    let mut vec = Vec::with_capacity(cap);
+
+                    // TODO iterate instead directly on the LocalVec
+                    // move the elements from the local to the remote buffer
+                    let arr: [T; N] = unsafe {
+                        std::mem::transmute_copy(local_vec)
+                    };
+
+                    for elem in arr {
+                        vec.push(elem);
+                    }
+
+                    // TODO use local_vec.set_len(0) instead
+                    // prevent local_vec's elements to be dropped twice
+                    while let Some(val) = local_vec.pop() {
+                        std::mem::forget(val);
+                    }
+
+                    // replace old buffer by new one
+                    *self = RemoteBuf(vec);
+
+                    // push the new element
                     self.push(val);
                 }
             },
-            Remote(vec) => {
+            RemoteBuf(vec) => {
                 vec.push(val);
             },
         }
@@ -64,18 +84,8 @@ impl<T, const N: usize> SmallVec<T, N> {
 
     pub fn pop(&mut self) -> Option<T> {
         match self {
-            Local(arr, len) => {
-                if *len == 0 {
-                    return None
-                } else {
-                    let val:T = unsafe {
-                        std::mem::transmute_copy(&arr[*len-1])
-                    };
-                    *len -= 1;
-                    Some(val)
-                }
-            }
-            Remote(vec) => vec.pop(),
+            LocalBuf(vec) => vec.pop(),
+            RemoteBuf(vec) => vec.pop(),
         }
     }
 }

@@ -9,11 +9,11 @@ A *dynamic array* or vector supporting *small buffer optimization*.
 
 `SmallVec<T, N>` is, in essence, just an `enum` with two variants:
 
-- `Local`: a buffer allocated locally inside the `SmallVec` itself.
-- `Remote`: a `Vec<T>`, i.e., a remote buffer allocated on the heap.
+- `LocalBuf`: a buffer allocated locally inside the `SmallVec` itself.
+- `RemoteBuf`: a `Vec<T>`, i.e., a remote buffer allocated on the heap.
 
 
-The capacity of the local buffer is specified at compile time as a constant generic argument to `SmallVec`.
+The capacity of the local buffer is specified at compile time as a constant generic argument to `SmallVec` thanks to *const generics*.
 
 
 

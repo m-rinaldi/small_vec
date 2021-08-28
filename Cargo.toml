@@ -11,3 +11,5 @@ description = "vector optimized for small buffers"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+local_vec = "~0.1.1"

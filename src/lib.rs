@@ -1,4 +1,5 @@
 mod drop;
+mod index;
 
 use local_vec::LocalVec;
 

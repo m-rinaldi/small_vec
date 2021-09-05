@@ -51,29 +51,15 @@ impl<T, const N: usize> SmallVec<T, N> {
                             .checked_add(1)
                             .expect("new capacity would overflow capacity type")
                     };
+                    // reserve capacity for the new size
                     let mut vec = Vec::with_capacity(cap);
 
-                    // TODO iterate instead directly on the LocalVec
-                    // move the elements from the local to the remote buffer
-                    let arr: [T; N] = unsafe {
-                        std::mem::transmute_copy(local_vec)
-                    };
-
-                    for elem in arr {
-                        vec.push(elem);
-                    }
-
-                    // TODO use local_vec.set_len(0) instead
-                    // prevent local_vec's elements to be dropped twice
-                    while let Some(val) = local_vec.pop() {
-                        std::mem::forget(val);
-                    }
+                    let arr = local_vec.take_array();
+                    vec.extend(arr);
+                    vec.push(val);
 
                     // replace old buffer by new one
                     *self = RemoteBuf(vec);
-
-                    // push the new element
-                    self.push(val);
                 }
             },
             RemoteBuf(vec) => {

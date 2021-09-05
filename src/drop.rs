@@ -7,6 +7,7 @@ impl<T, const N: usize> Drop for SmallVec<T, N> {
 
 #[cfg(test)]
 mod tests {
+    #[derive(Debug)]
     struct CounterGuard(*mut u8);
 
     impl<'a> CounterGuard {
